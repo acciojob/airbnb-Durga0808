@@ -22,16 +22,22 @@ public class HotelManagementService {
         //Incase somebody is trying to add the duplicate hotelName return FAILURE
         //in all other cases return SUCCESS after successfully adding the hotel to the hotelDb.
         HashMap<String,Hotel> hotelDB=HMrepo.getHotelDB();
-
-        if(hotel.getHotelName() == null||hotel==null){
+        String name=hotel.getHotelName();
+        System.out.print(name);
+        if(hotel==null||name.isEmpty()){
             return "an empty a FAILURE";
-        }else if(hotelDB.containsValue(hotel.getHotelName())){
-            return "FAILURE";
-        }else{
-            hotelDB.put(hotel.getHotelName(),hotel);
-            HMrepo.setHotelDB(hotelDB);
-            return "SUCCESS";
+        }else {
+            for(String n:hotelDB.keySet()){
+                if(n.equals(name)){
+                    return "FAILURE";
+                }
+            }
+                hotelDB.put(name,hotel);
+                HMrepo.setHotelDB(hotelDB);
+                return "SUCCESS";
+
         }
+
 
     }
 
@@ -55,7 +61,7 @@ public class HotelManagementService {
             if(hotelDB.get(name).getFacilities().size()>facilites){
                 ans=name;
             }else if(hotelDB.get(name).getFacilities().size()==facilites){
-                if(ans==null){
+                if(ans.isEmpty()){
                     ans=name;
                 }else{
                     if(ans.compareTo(name) >0){
