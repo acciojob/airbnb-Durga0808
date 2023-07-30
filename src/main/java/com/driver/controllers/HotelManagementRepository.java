@@ -5,40 +5,51 @@ import com.driver.model.Hotel;
 import com.driver.model.User;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 @Repository
 public class HotelManagementRepository {
-    private HashMap<String, Hotel>HotelDB;
-    private HashMap<Integer, User>UserDB;
-    private HashMap<String, Booking>bookingDB;
-    public HashMap<Integer, User> getUserDB() {
-        return UserDB;
+    HashMap<String, Hotel> hotelDb = new HashMap<>();
+    HashMap<Integer, User> userDb = new HashMap<>();
+    HashMap<String, Booking> bookingDb = new HashMap<>();
+    HashMap<Integer, List<Booking>> userBookingDb = new HashMap<Integer, List<Booking>>();
+    public String addHotel(Hotel hotel)
+    {
+        String hotelName = hotel.getHotelName();
+        if(hotelDb.containsKey(hotelName))
+        {
+            return "FAILURE";
+        }
+        hotelDb.put(hotelName, hotel);
+        return "SUCCESS";
     }
-
-    public HashMap<String, Booking> getBookingDB() {
-        return bookingDB;
+    public void addUser(User user)
+    {
+        userDb.put(user.getaadharCardNo(), user);
     }
-
-    public void setBookingDB(HashMap<String, Booking> bookingDB) {
-        this.bookingDB = bookingDB;
+    public HashMap<String, Hotel> getHotelDb()
+    {
+        return hotelDb;
     }
-
-    public void setUserDB(HashMap<Integer, User> userDB) {
-        UserDB = userDB;
+    public void updateHotel(Hotel hotel)
+    {
+        hotelDb.put(hotel.getHotelName(),hotel);
     }
-
-    public HotelManagementRepository() {
-        HotelDB=new HashMap<String, Hotel>();
-        UserDB=new HashMap<>();
-        bookingDB=new HashMap<>();
+    public void addHotelAndBooking(Booking booking)
+    {
+        bookingDb.put(booking.getBookingId(), booking);
     }
-
-    public HashMap<String, Hotel> getHotelDB() {
-        return HotelDB;
+    public void addUserBooking(Booking booking)
+    {
+        int aadharCardNo = booking.getBookingAadharCard();
+        List<Booking> bookings = userBookingDb.getOrDefault(aadharCardNo, new ArrayList<>());
+        bookings.add(booking);
+        userBookingDb.put(aadharCardNo, bookings);
     }
-
-    public void setHotelDB(HashMap<String, Hotel> hotelDB) {
-        HotelDB = hotelDB;
+    public HashMap<Integer, List<Booking>> getUserBookingDb(Integer aadharCard)
+    {
+        return userBookingDb;
     }
 }

@@ -7,134 +7,81 @@ import com.driver.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class HotelManagementService {
-    @Autowired
-    private HotelManagementRepository HMrepo;
-
-    public String addHotel(Hotel hotel) {
-        //You need to add an hotel to the database
-        //incase the hotelName is null or the hotel Object is null return an empty a FAILURE
-        //Incase somebody is trying to add the duplicate hotelName return FAILURE
-        //in all other cases return SUCCESS after successfully adding the hotel to the hotelDb.
-        HashMap<String,Hotel> hotelDB=HMrepo.getHotelDB();
-        String name=hotel.getHotelName();
-        System.out.print(name);
-        if(hotel==null||name.isEmpty()){
-            return "an empty a FAILURE";
-        }else {
-            for(String n:hotelDB.keySet()){
-                if(n.equals(name)){
-                    return "FAILURE";
-                }
-            }
-                hotelDB.put(name,hotel);
-                HMrepo.setHotelDB(hotelDB);
-                return "SUCCESS";
-
+    HotelManagementRepository repositoryObject = new HotelManagementRepository();
+    public String addHotel(Hotel hotel)
+    {
+        return repositoryObject.addHotel(hotel);
+    }
+    public void addUser(User user)
+    {
+        repositoryObject.addUser(user);
+    }
+    public String getHotelWithMostFacilities()
+    {
+        HashMap<String, Hotel> hotelDb = repositoryObject.getHotelDb();
+        if(hotelDb.size() == 0){ return ""; }
+        int maxFacilities = 0;
+        for(Hotel hotel : hotelDb.values())
+        {
+            maxFacilities = Math.max(maxFacilities, hotel.getFacilities().size());
         }
-
-
-    }
-
-    public Integer addUser(User user) {
-        //You need to add a User Object to the database
-        //Assume that user will always be a valid user and return the aadharCardNo of the user
-        HashMap<Integer, User>UserDB=HMrepo.getUserDB();
-        UserDB.put(user.getaadharCardNo(),user);
-        HMrepo.setUserDB(UserDB);
-        return user.getaadharCardNo();
-    }
-
-    public String getHotelWithMostFacilities() {
-        //Out of all the hotels we have added so far, we need to find the hotelName with most no of facilities
-        //Incase there is a tie return the lexicographically smaller hotelName
-        //Incase there is not even a single hotel with atleast 1 facility return "" (empty string)
-        String ans="";
-        int facilites=0;
-        HashMap<String,Hotel> hotelDB=HMrepo.getHotelDB();
-        for(String name: hotelDB.keySet()){
-            if(hotelDB.get(name).getFacilities().size()>facilites){
-                ans=name;
-            }else if(hotelDB.get(name).getFacilities().size()==facilites){
-                if(ans.isEmpty()){
-                    ans=name;
-                }else{
-                    if(ans.compareTo(name) >0){
-                        ans=name;
-                    }
-                }
+        if(maxFacilities == 0){ return ""; }
+        List<String> hotelNames = new ArrayList<>();
+        for(Hotel hotel : hotelDb.values())
+        {
+            if(maxFacilities == hotel.getFacilities().size())
+            {
+                hotelNames.add(hotel.getHotelName());
             }
         }
-        return ans;
+        Collections.sort(hotelNames);
+        return hotelNames.get(0);
     }
-
-    public int getbookARoom(Booking booking) {
-        //The booking object coming from postman will have all the attributes except bookingId and amountToBePaid;
-        //Have bookingId as a random UUID generated String
-        //save the booking Entity and keep the bookingId as a primary key
-        //Calculate the total amount paid by the person based on no. of rooms booked and price of the room per night.
-        //If there arent enough rooms available in the hotel that we are trying to book return -1
-        //in other case return total amount paid
-        UUID bookingId= UUID.randomUUID();
-        booking.setBookingId(bookingId.toString());
-        HashMap<String,Hotel> hotelDB=HMrepo.getHotelDB();
-        int roomsneeded=booking.getNoOfRooms();
-        String hotelname=booking.getHotelName();
-        Hotel hotel=hotelDB.get(hotelname);
-        int roomsavilable=hotel.getAvailableRooms();
-        int price=hotel.getPricePerNight();
-        int amountToPay=price*roomsneeded;
-        booking.setAmountToBePaid(amountToPay);
-        HashMap<String,Booking>bookingDB=HMrepo.getBookingDB();
-        bookingDB.put(bookingId.toString(),booking);
-        HMrepo.setBookingDB(bookingDB);
-
-        if(roomsavilable>=roomsneeded){
-            roomsavilable-=roomsneeded;
-            hotel.setAvailableRooms(roomsavilable);
-            hotelDB.put(hotelname,hotel);
-            HMrepo.setHotelDB(hotelDB);
-            return amountToPay;
-        }else{
-            hotelDB.put(hotelname,hotel);
-            HMrepo.setHotelDB(hotelDB);
-           return -1;
+    public int bookARoom(Booking booking)
+    {
+        String bookingId = UUID.randomUUID().toString();
+        booking.setBookingId(bookingId);
+        HashMap<String, Hotel> hotelDb = repositoryObject.getHotelDb();
+        Hotel hotel = hotelDb.get(booking.getHotelName());
+        if(booking.getNoOfRooms() > hotel.getAvailableRooms())
+        {
+            return -1;
+        }
+        else
+        {
+            hotel.setAvailableRooms(hotel.getAvailableRooms() - booking.getNoOfRooms());
+            int totalAmountPaid = booking.getNoOfRooms() * hotel.getPricePerNight();
+            booking.setAmountToBePaid(totalAmountPaid);
+            repositoryObject.updateHotel(hotel);
+            repositoryObject.addHotelAndBooking(booking);
+            repositoryObject.addUserBooking(booking);
+            return totalAmountPaid;
         }
     }
-
-    public int getBookingPerson(Integer aadharCard) {
-        //In this function return the bookings done by a person
-        HashMap<String,Booking>bookingDB=HMrepo.getBookingDB();
-        int bookings=0;
-        for(String Bid: bookingDB.keySet()){
-            if(bookingDB.get(Bid).getBookingAadharCard()==aadharCard){
-                bookings++;
+    public int getBookings(Integer aadharCard)
+    {
+        HashMap<Integer, List<Booking>> userBookingDb = repositoryObject.getUserBookingDb(aadharCard);
+        if(userBookingDb.size() == 0) { return 0; }
+        return userBookingDb.get(aadharCard).size();
+    }
+    public Hotel updateFacilities(List<Facility> newFacilities,String hotelName)
+    {
+        HashMap<String, Hotel> hotelDb = repositoryObject.getHotelDb();
+        Hotel hotel = hotelDb.get(hotelName);
+        List<Facility> oldFacilities = hotel.getFacilities();
+        for(Facility facility : newFacilities)
+        {
+            if(!oldFacilities.contains(facility))
+            {
+                oldFacilities.add(facility);
             }
         }
-        return bookings;
-    }
-
-    public Hotel updateFacilites(List<Facility> newFacilities, String hotelName) {
-        //We are having a new facilites that a hotel is planning to bring.
-        //If the hotel is already having that facility ignore that facility otherwise add that facility in the hotelDb
-        //return the final updated List of facilities and also update that in your hotelDb
-        //Note that newFacilities can also have duplicate facilities possible
-        HashMap<String,Hotel> hotelDB=HMrepo.getHotelDB();
-        Hotel hotel=hotelDB.get(hotelName);
-        List<Facility>oldlist=hotel.getFacilities();
-        for(Facility f:newFacilities){
-            if(!oldlist.contains(f)){
-                oldlist.add(f);
-            }
-        }
-        hotel.setFacilities(oldlist);
-        hotelDB.put(hotelName,hotel);
-        HMrepo.setHotelDB(hotelDB);
+        hotel.setFacilities(oldFacilities);
+        repositoryObject.updateHotel(hotel);
         return hotel;
     }
 }
