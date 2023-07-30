@@ -25,21 +25,20 @@ public class HotelManagementService {
         HashMap<String, Hotel> hotelDb = repositoryObject.getHotelDb();
         if(hotelDb.size() == 0){ return ""; }
         int maxFacilities = 0;
-        for(Hotel hotel : hotelDb.values())
-        {
-            maxFacilities = Math.max(maxFacilities, hotel.getFacilities().size());
-        }
-        if(maxFacilities == 0){ return ""; }
-        List<String> hotelNames = new ArrayList<>();
-        for(Hotel hotel : hotelDb.values())
-        {
-            if(maxFacilities == hotel.getFacilities().size())
-            {
-                hotelNames.add(hotel.getHotelName());
+        String name="";
+        for(Hotel hotel: hotelDb.values()){
+            if(maxFacilities<hotel.getFacilities().size()){
+                maxFacilities=hotel.getFacilities().size();
+                name=hotel.getHotelName();
+            }else if(maxFacilities==hotel.getFacilities().size()){
+                if(name==null){
+                    name=hotel.getHotelName();
+                }else if(name.compareTo(hotel.getHotelName())>0){
+                    name=hotel.getHotelName();
+                }
             }
         }
-        Collections.sort(hotelNames);
-        return hotelNames.get(0);
+        return name;
     }
     public int bookARoom(Booking booking)
     {
